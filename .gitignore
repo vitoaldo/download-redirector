@@ -1,0 +1,134 @@
+# ==============================================================================
+# .gitignore para Projetos .NET / Windows Service - Foco em Segurança e Limpeza
+# ==============================================================================
+# Desenvolvido seguindo as melhores práticas para garantir que secrets, 
+# chaves privadas, configurações locais e builds não subam para o repositório.
+
+# ------------------------------------------------------------------------------
+# 1. Pastas e Arquivos de Build/Compilação (Obrigatório ignorar)
+# ------------------------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Tt]est[Rr]esults/
+[Bb]uild/
+[Dd]ist/
+[Rr]elease/
+
+# ------------------------------------------------------------------------------
+# 2. Configurações Locais e IDE (Não suba configurações de máquina/usuário)
+# ------------------------------------------------------------------------------
+# Visual Studio / Visual Studio Code
+.vs/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.userprefs
+*.layout
+
+# Resharper / Rider
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# ------------------------------------------------------------------------------
+# 3. Segurança: Secrets, Chaves e Credenciais (CRÍTICO)
+# ------------------------------------------------------------------------------
+# Nunca comaitar arquivos de configuração contendo senhas reais ou chaves de API.
+# Crie arquivos `.template` ou `.example` para versionamento.
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+!appsettings.example.json
+
+# Arquivos de ambiente e chaves
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+*.snk
+*.cer
+*.pub
+*_rsa
+
+# Certificados de desenvolvedor gerados localmente
+localhost.pfx
+
+# ------------------------------------------------------------------------------
+# 4. Logs, Dumps de Memória e Profilers (Evita vazamento de dados de execução)
+# ------------------------------------------------------------------------------
+*.log
+*.err
+*.pid
+*.seed
+*.pid.lock
+# Dumps de memória podem conter senhas e tokens em plain-text
+*.dmp
+*.mdmp
+# Profilers e análises de cobertura
+*.coverage
+*.coveragexml
+TestResults/
+BenchmarkDotNet.Artifacts/
+
+# ------------------------------------------------------------------------------
+# 5. Dependências do Sistema e Pacotes (Já gerenciados via .csproj/nuget)
+# ------------------------------------------------------------------------------
+# Diretórios do NuGet
+packages/
+*.nupkg
+
+# Node/NPM (Caso tenha algum script de frontend/build)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# ------------------------------------------------------------------------------
+# 6. Arquivos Temporários de Sistema Operacional
+# ------------------------------------------------------------------------------
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# macOS (Caso outro dev abra no Mac)
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Linux
+*~
+.directory
+
+# ------------------------------------------------------------------------------
+# 7. Arquivos Temporários da Aplicação e Dados Locais
+# ------------------------------------------------------------------------------
+# Bibliotecas de banco de dados e arquivos locais (Caso o serviço use algo local)
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.mdf
+*.ldf
+*.ndf
