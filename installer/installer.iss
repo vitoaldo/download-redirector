@@ -47,7 +47,6 @@ MinVersion=10.0
 UninstallDisplayName={#MyAppName}
 
 [Languages]
-Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
