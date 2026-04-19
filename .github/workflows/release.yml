@@ -14,33 +14,34 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: 📥 Checkout do código
+      - name: Checkout do código
         uses: actions/checkout@v4
 
-      - name: ⚙️ Configurar .NET 8
+      - name: Configurar .NET 8
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
 
-      - name: 📦 Restaurar dependências
+      - name: Restaurar dependências
         run: dotnet restore
 
-      - name: 🔨 Publicar (single-file, self-contained)
+      - name: Publicar (single-file, self-contained)
         run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -o ./publish
 
-      - name: 🏗️ Instalar Inno Setup
+      - name: Instalar Inno Setup
         run: choco install innosetup --yes --no-progress
 
-      - name: 🏷️ Extrair versão da tag
+      - name: Extrair versão da tag
         id: version
         shell: bash
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
-      - name: 📀 Gerar instalador (.exe)
-        shell: cmd
-        run: "\"%ProgramFiles(x86)%\\Inno Setup 6\\ISCC.exe\" /DMyAppVersion=${{ steps.version.outputs.VERSION }} installer\\installer.iss"
+      - name: Gerar instalador (.exe)
+        run: |
+          $InnoSetup = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          & $InnoSetup /DMyAppVersion=${{ steps.version.outputs.VERSION }} installer\installer.iss
 
-      - name: 🚀 Publicar Release no GitHub
+      - name: Publicar Release no GitHub
         uses: softprops/action-gh-release@v2
         with:
           files: installer/Output/*.exe
