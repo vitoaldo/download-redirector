@@ -16,7 +16,10 @@
   #define MyAppVersion "1.0.0"
 #endif
 #ifndef PublishDir
-  #define PublishDir "..\publish"
+  #define PublishDir SourcePath + "\..\publish"
+#endif
+#ifndef LicenseDir
+  #define LicenseDir SourcePath + "\..\LICENSE"
 #endif
 
 ; -- Metadados do aplicativo --------------------------------------------------
@@ -34,7 +37,7 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\DownloadRedirector
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-LicenseFile=..\LICENSE
+LicenseFile={#LicenseDir}
 OutputDir=Output
 OutputBaseFilename=DownloadRedirector-Setup-{#MyAppVersion}
 Compression=lzma2/ultra64
@@ -57,7 +60,7 @@ Source: "{#PublishDir}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PublishDir}\appsettings.json"; DestDir: "{app}"; Flags: onlyifdoesntexist uninsneveruninstall
 
 ; Licença para referência
-Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#LicenseDir}"; DestDir: "{app}"; Flags: ignoreversion
 
 [Code]
 // ---------------------------------------------------------------------------

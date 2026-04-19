@@ -36,13 +36,32 @@ jobs:
         shell: bash
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
+      - name: Verificar arquivos antes do Inno Setup
+        shell: pwsh
+        run: |
+          Write-Host "=== Diretorio de trabalho ==="
+          Get-Location
+          Write-Host "=== Conteudo de publish/ ==="
+          Get-ChildItem -Path publish -ErrorAction SilentlyContinue
+          Write-Host "=== LICENSE ==="
+          Test-Path LICENSE
+          Write-Host "=== installer/ ==="
+          Get-ChildItem -Path installer -ErrorAction SilentlyContinue
+          Write-Host "=== ISCC.exe ==="
+          Get-ChildItem -Path "C:\Program Files (x86)\Inno Setup*" -Filter "ISCC.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object FullName
+
       - name: Gerar instalador (.exe)
         shell: pwsh
         run: |
-          $iscc = Get-ChildItem -Path "C:\Program Files (x86)\Inno Setup*" -Filter "ISCC.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $iscc) { Write-Error "ISCC.exe não encontrado"; exit 1 }
-          Write-Host "Usando: $($iscc.FullName)"
-          & $iscc.FullName /DMyAppVersion=${{ steps.version.outputs.VERSION }} "installer\installer.iss"
+          $iscc = (Get-ChildItem -Path "C:\Program Files (x86)\Inno Setup*" -Filter "ISCC.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+          if (-not $iscc) { Write-Error "ISCC.exe nao encontrado"; exit 1 }
+          Write-Host "ISCC encontrado em: $iscc"
+          Write-Host "Versao: ${{ steps.version.outputs.VERSION }}"
+          $publishDir = Join-Path $env:GITHUB_WORKSPACE "publish"
+          $licenseFile = Join-Path $env:GITHUB_WORKSPACE "LICENSE"
+          Write-Host "PublishDir: $publishDir"
+          Write-Host "LicenseFile: $licenseFile"
+          & $iscc /DMyAppVersion=${{ steps.version.outputs.VERSION }} /DPublishDir="$publishDir" /DLicenseDir="$licenseFile" "installer\installer.iss"
 
       - name: Publicar Release no GitHub
         uses: softprops/action-gh-release@v2
