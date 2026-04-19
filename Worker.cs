@@ -19,10 +19,8 @@ public class Worker : BackgroundService
 
         try
         {
-            // Obtém o caminho da pasta Downloads do usuário atual do Windows
             var downloadsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
             
-            // Lê as configurações do appsettings.json
             var organizerSettings = _configuration.GetSection("OrganizerSettings").Get<Dictionary<string, string[]>>() ?? new Dictionary<string, string[]>();
 
             while (!stoppingToken.IsCancellationRequested)
@@ -41,20 +39,24 @@ public class Worker : BackgroundService
 
                 try
                 {
-                    var files = Directory.GetFiles(downloadsPath);
+                    var files = Directory.EnumerateFiles(downloadsPath);
 
                     foreach (var file in files)
                     {
                         var extension = Path.GetExtension(file).ToLowerInvariant();
                         var fileName = Path.GetFileName(file);
                         
-                        // Ignora arquivos temporários comuns de download em andamento
                         if (extension == ".crdownload" || extension == ".part" || extension == ".tmp")
                             continue;
 
-                        string targetFolderCategory = "Outros"; // Categoria Padrão
+                        if (IsFileLocked(file))
+                        {
+                            _logger.LogDebug("Arquivo ignorado por estar em uso (presumivelmente baixando): {file}", fileName);
+                            continue;
+                        }
 
-                        // Procura uma categoria correspondente no appsettings
+                        string targetFolderCategory = "Outros";
+
                         foreach (var category in organizerSettings)
                         {
                             if (category.Value.Contains(extension))
@@ -72,45 +74,55 @@ public class Worker : BackgroundService
                             Directory.CreateDirectory(targetDirectoryPath);
                         }
 
-                        // Se o arquivo destino já existe, anexa um timestamp para evitar sobrescrever
                         if (File.Exists(targetFilePath))
                         {
                             var fileNameWithoutExt = Path.GetFileNameWithoutExtension(file);
                             targetFilePath = Path.Combine(targetDirectoryPath, $"{fileNameWithoutExt}_{DateTime.Now:yyyyMMddHHmmss}{extension}");
                         }
 
-                        // Movendo o arquivo
                         File.Move(file, targetFilePath);
                         _logger.LogInformation("Arquivo movido com sucesso: {file} para a pasta {category}", fileName, targetFolderCategory);
                     }
                 }
-                catch (IOException ioEx)
-                {
-                    // Erros de IO geralmente indicam que o arquivo ainda está sendo baixado ou está em uso.
-                    // Apenas registramos o alerta e tentamos novamente no próximo ciclo.
-                    _logger.LogWarning("O arquivo pode estar em uso. Detalhes: {message}", ioEx.Message);
-                }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Erro ao tentar organizar os arquivos da pasta Downloads.");
+                    _logger.LogError(ex, "Erro inesperado ao tentar organizar os arquivos da pasta Downloads.");
                 }
                 
-                // Intervalo de espera entre cada execução: 20 minutos
                 await Task.Delay(TimeSpan.FromMinutes(20), stoppingToken);
             }
         }
         catch (OperationCanceledException)
         {
-            // O serviço está sendo parado normalmente.
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro inesperado na execucao com Download Redirector.");
-            Environment.Exit(1); // Encerra o processo de forma fatal se houver uma falha crítica.
+            Environment.Exit(1);
         }
         finally
         {
             _logger.LogInformation("Download Redirector Fim de servico em: {time}", DateTimeOffset.Now);
         }
+    }
+
+    /// <summary>
+    /// Verifica se um arquivo está bloqueado por outro processo (ex: navegador efetuando o download ou um arquivo temporário gravando).
+    /// </summary>
+    private bool IsFileLocked(string filePath)
+    {
+        try
+        {
+            using (FileStream stream = new FileInfo(filePath).Open(FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                stream.Close();
+            }
+        }
+        catch (IOException)
+        {
+            return true;
+        }
+        
+        return false;
     }
 }

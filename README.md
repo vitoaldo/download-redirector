@@ -1,83 +1,164 @@
 # Download Redirector Service
 
-Este é um template minimalista de um Serviço Windows (Windows Service) construído em C# (.NET 8). Foi projetado para ser pequeno, eficiente e fácil de estender, mantendo focado na execução de tarefas em segundo plano (background tasks).
+[![Release](https://github.com/vitoaldo/download-redirector/actions/workflows/release.yml/badge.svg)](https://github.com/vitoaldo/download-redirector/actions/workflows/release.yml)
+[![Latest Release](https://img.shields.io/github/v/release/vitoaldo/download-redirector)](https://github.com/vitoaldo/download-redirector/releases/latest)
 
-## Pré-requisitos
+Serviço Windows (.NET 8) que monitora e organiza automaticamente os arquivos da pasta **Downloads**, categorizando-os em subpastas por tipo de arquivo. Roda em segundo plano como um Windows Service, sem necessidade de interação.
+
+---
+
+## 📥 Instalação
+
+### Via Instalador (Recomendado)
+
+1. Acesse a página de [Releases](https://github.com/vitoaldo/download-redirector/releases/latest).
+2. Baixe o arquivo `DownloadRedirector-Setup-x.x.x.exe`.
+3. Execute como **Administrador**.
+4. Pronto! O serviço será instalado e iniciado automaticamente.
+
+> **Desinstalar:** Use **Adicionar ou Remover Programas** do Windows, ou execute o desinstalador presente na pasta de instalação.
+
+### Via Linha de Comando (Manual)
+
+Para instalar manualmente sem o instalador, siga os passos abaixo.
+
+#### Pré-requisitos
+
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) instalado.
 
-## Como Desenvolver e Testar Localmente
-
-Para rodar o projeto localmente (no modo console para testes), abra um terminal nesta pasta e execute:
-```powershell
-dotnet run
-```
-Para parar, pressione `Ctrl+C`.
-
-## Como Gerar o Instalável (Build & Publish)
-
-Você não precisa do Visual Studio para gerar o executável. Para preparar o serviço para instalação em uma máquina de produção como um único arquivo sem depender de um runtime instalado, use o seguinte comando:
+#### 1. Gerar o Executável
 
 ```powershell
-dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish
 ```
 
-O arquivo `.exe` resultante ficará disponível no seguinte diretório:
-`bin\Release\net8.0\win-x64\publish\`
+O arquivo `.exe` resultante estará na pasta `./publish/`.
 
-> **Nota:** Navegue até este diretório antes de executar os comandos de instalação abaixo, ou use o caminho completo para o `.exe`.
+#### 2. Registrar o Serviço
 
-## Como Gerenciar o Serviço no Windows
-
-Todas estas ações exigem um **Terminal (PowerShell) em modo Administrador**.
-Assuma que o nome do projeto executável seja `download-redirector.exe`.
-
-### 1. Instalação
-Utilize o utilitário nativo do Windows, `sc.exe` (Service Control), para instalar seu serviço.
+Abra um **Terminal (PowerShell) em modo Administrador**:
 
 ```powershell
-# Exemplo usando sc.exe (Atenção ao espaço obrigatório após "binpath=")
-sc.exe create "DownloadRedirectorService" binpath= "C:\Caminho\Completo\Para\Sua\Pasta\bin\Release\net8.0\win-x64\publish\download-redirector.exe" start= auto
+# Via sc.exe (atenção ao espaço obrigatório após "binpath=")
+sc.exe create "DownloadRedirectorService" binpath= "C:\Caminho\Completo\publish\download-redirector.exe" start= auto
+
+# Ou via PowerShell nativo:
+New-Service -Name "DownloadRedirectorService" -BinaryPathName "C:\Caminho\Completo\publish\download-redirector.exe" -StartupType Automatic
 ```
 
-Você também pode usar comandos nativos do PowerShell, se preferir:
-```powershell
-New-Service -Name "DownloadRedirectorService" -BinaryPathName "C:\Caminho\Completo\Para\Sua\Pasta\bin\Release\net8.0\win-x64\publish\download-redirector.exe" -StartupType Automatic
-```
+#### 3. Iniciar o Serviço
 
-### 2. Iniciar o Serviço
 ```powershell
 sc.exe start "DownloadRedirectorService"
-# ou no PowerShell: Start-Service "DownloadRedirectorService"
 ```
 
-### 3. Verificar o Status
+---
+
+## ⚙️ Configuração
+
+O arquivo `appsettings.json` define as categorias de organização. Cada chave é o nome da subpasta e o valor é uma lista de extensões.
+
+**Localização:**
+- Instalação via instalador: `C:\Program Files\DownloadRedirector\appsettings.json`
+- Desenvolvimento local: raiz do projeto
+
+**Categorias padrão:**
+
+| Pasta | Extensões |
+| :--- | :--- |
+| Documentos | `.txt`, `.pdf`, `.doc`, `.docx`, `.xls`, `.xlsx`, `.ppt`, `.pptx`, `.csv` |
+| Videos | `.mp4`, `.mkv`, `.avi`, `.mov`, `.wmv`, `.flv`, `.webm` |
+| Imagens | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp`, `.svg` |
+| Musicas | `.mp3`, `.wav`, `.flac`, `.ogg`, `.aac` |
+| Executaveis | `.exe`, `.msi`, `.bat`, `.cmd`, `.ps1` |
+| Compactados | `.zip`, `.rar`, `.7z`, `.tar`, `.gz` |
+| Codigos | `.cs`, `.js`, `.html`, `.css`, `.json`, `.xml`, `.py`, `.cpp`, `.c` |
+| Isos_e_Imagens | `.iso`, `.img`, `.vdi`, `.vmdk` |
+| Outros | Qualquer extensão não listada acima |
+
+> **Nota:** O arquivo `appsettings.json` **não é sobrescrito** em atualizações via instalador, preservando suas personalizações.
+
+---
+
+## 📋 Gerenciamento do Serviço
+
+Todos os comandos abaixo exigem um **Terminal em modo Administrador**.
+
 ```powershell
+# Verificar status
 sc.exe query "DownloadRedirectorService"
-# ou no PowerShell: Get-Service "DownloadRedirectorService"
-```
 
-### 4. Parar o Serviço
-```powershell
+# Parar o serviço
 sc.exe stop "DownloadRedirectorService"
-# ou no PowerShell: Stop-Service "DownloadRedirectorService"
-```
 
-### 5. Desinstalar (Remover) o Serviço
-**Atenção:** Certifique-se de parar o serviço antes de removê-lo.
-```powershell
+# Iniciar o serviço
+sc.exe start "DownloadRedirectorService"
+
+# Remover o serviço (pare-o antes)
 sc.exe delete "DownloadRedirectorService"
-# ou no PowerShell (disponível no PowerShell 6+): Remove-Service "DownloadRedirectorService"
 ```
 
-## Como Visualizar Logs (Visualizador de Eventos)
+---
 
-Por padrão, quando rodando como Serviço Windows puro, o `Microsoft.Extensions.Hosting.WindowsServices` escreve os logs de nível *Warning* e *Error* diretamente no **Visualizador de Eventos (Event Viewer)** do Windows, e em certos casos o nível de log *Information* não é registrado automaticamente a não ser configurado de forma explícita.
+## 📄 Logs
 
-Para ver os logs do sistema:
-1. Aperte `Win + R`, digite `eventvwr` e dê ENTER.
-2. Navegue para: **Logs do Windows -> Aplicativo** (Windows Logs -> Application).
-3. Na barra lateral direita, clique em **Filtrar Log Atual...** (Filter Current Log...)
-4. No campo "Fontes de eventos" (Event sources), selecione o nome do seu aplicativo (ex: `download-redirector`).
+Quando rodando como Serviço Windows, os logs são escritos no **Visualizador de Eventos (Event Viewer)**:
 
-### Dica de Logs Avançados
-Se você deseja salvar logs em arquivos físicos (ex: `.txt`), é altamente recomendável adicionar um provedor de logs como o [Serilog](https://serilog.net/) ou o [NLog](https://nlog-project.org/) ao projeto. Eles são leves e facilmente configuráveis pelo `Program.cs`.
+1. Pressione `Win + R`, digite `eventvwr` e pressione ENTER.
+2. Navegue para: **Logs do Windows → Aplicativo**.
+3. Filtre por fonte de evento `download-redirector`.
+
+> **Dica:** Para logs em arquivo, adicione um provedor como [Serilog](https://serilog.net/) ou [NLog](https://nlog-project.org/).
+
+---
+
+## 🛠️ Desenvolvimento
+
+```powershell
+# Rodar localmente (modo console)
+dotnet run
+
+# Para parar, pressione Ctrl+C
+```
+
+---
+
+## 🚀 CI/CD — Releases Automáticas
+
+O projeto usa **GitHub Actions** com **Inno Setup** para gerar instaladores automaticamente.
+
+### Como funciona
+
+```
+git tag v1.0.0 → GitHub Actions → dotnet publish → Inno Setup → Release (.exe)
+```
+
+1. Um desenvolvedor cria uma **tag** no formato `v*.*.*`
+2. O workflow `release.yml` é disparado automaticamente
+3. O código é compilado como single-file self-contained para `win-x64`
+4. O Inno Setup gera o instalador `.exe`
+5. O instalador é publicado na aba **Releases** do GitHub
+
+### Como criar uma nova release
+
+```powershell
+# 1. Atualize a versão no .csproj (opcional, mas recomendado)
+# 2. Commit e push das alterações
+git add .
+git commit -m "release: v1.1.0"
+git push
+
+# 3. Crie e envie a tag
+git tag v1.1.0
+git push origin v1.1.0
+```
+
+A release aparecerá automaticamente em: [github.com/vitoaldo/download-redirector/releases](https://github.com/vitoaldo/download-redirector/releases)
+
+---
+
+## 📜 Licença
+
+Este projeto está licenciado sob a [MIT License](LICENSE).
+
+Copyright (c) 2026 Victor Adalto Cavalcanti Valentim
