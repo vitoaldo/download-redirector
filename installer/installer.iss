@@ -1,25 +1,25 @@
 ; =============================================================================
-; Download Redirector — Inno Setup Installer Script
+; Download Redirector - Inno Setup Installer Script
 ; =============================================================================
 ; Gera um instalador profissional para Windows que:
-;   - Copia os binários para Program Files
+;   - Copia os binarios para Program Files
 ;   - Registra e inicia o Windows Service automaticamente
-;   - Preserva o appsettings.json do usuário em atualizações
-;   - Para e remove o serviço na desinstalação
+;   - Preserva o appsettings.json do usuario em atualizacoes
+;   - Para e remove o servico na desinstalacao
 ;
 ; Uso local:  iscc installer.iss
-; Uso no CI:  iscc /DMyAppVersion=1.2.3 installer.iss
+; Uso no CI:  iscc /DMyAppVersion=1.2.3 /DMyPublishDir=C:\path\publish /DMyLicenseFile=C:\path\LICENSE installer.iss
 ; =============================================================================
 
-; -- Variáveis de compilação (sobrescritas pelo CI via /D) --------------------
+; -- Variaveis de compilacao (sobrescritas pelo CI via /D) --------------------
 #ifndef MyAppVersion
   #define MyAppVersion "1.0.0"
 #endif
-#ifndef PublishDir
-  #define PublishDir SourcePath + "\..\publish"
+#ifndef MyPublishDir
+  #define MyPublishDir "..\publish"
 #endif
-#ifndef LicenseDir
-  #define LicenseDir SourcePath + "\..\LICENSE"
+#ifndef MyLicenseFile
+  #define MyLicenseFile "..\LICENSE"
 #endif
 
 ; -- Metadados do aplicativo --------------------------------------------------
@@ -37,7 +37,7 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\DownloadRedirector
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-LicenseFile={#LicenseDir}
+LicenseFile={#MyLicenseFile}
 OutputDir=Output
 OutputBaseFilename=DownloadRedirector-Setup-{#MyAppVersion}
 Compression=lzma2/ultra64
@@ -53,24 +53,16 @@ UninstallDisplayName={#MyAppName}
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-; Binário principal (sempre sobrescreve em atualizações)
-Source: "{#PublishDir}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+; Binario principal (sempre sobrescreve em atualizacoes)
+Source: "{#MyPublishDir}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 
-; Configurações do usuário (preserva personalizações em atualizações)
-Source: "{#PublishDir}\appsettings.json"; DestDir: "{app}"; Flags: onlyifdoesntexist uninsneveruninstall
+; Configuracoes do usuario (preserva personalizacoes em atualizacoes)
+Source: "{#MyPublishDir}\appsettings.json"; DestDir: "{app}"; Flags: onlyifdoesntexist uninsneveruninstall
 
-; Licença para referência
-Source: "{#LicenseDir}"; DestDir: "{app}"; Flags: ignoreversion
+; Licenca para referencia
+Source: "{#MyLicenseFile}"; DestDir: "{app}"; Flags: ignoreversion
 
 [Code]
-// ---------------------------------------------------------------------------
-// Gerenciamento do Windows Service via sc.exe
-// ---------------------------------------------------------------------------
-// ssInstall:    Para e remove o serviço existente (seguro em instalação limpa)
-// ssPostInstall: Cria o serviço com o caminho correto e o inicia
-// Uninstall:    Para e remove o serviço antes de deletar os arquivos
-// ---------------------------------------------------------------------------
-
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;
@@ -78,12 +70,9 @@ var
 begin
   if CurStep = ssInstall then
   begin
-    // Para o serviço existente (ignora erro se não existir)
     Exec(ExpandConstant('{sys}\sc.exe'), 'stop {#MyAppServiceName}', '',
          SW_HIDE, ewWaitUntilTerminated, ResultCode);
     Sleep(2000);
-
-    // Remove o serviço existente para recriar com caminho atualizado
     Exec(ExpandConstant('{sys}\sc.exe'), 'delete {#MyAppServiceName}', '',
          SW_HIDE, ewWaitUntilTerminated, ResultCode);
     Sleep(1000);
@@ -92,18 +81,12 @@ begin
   if CurStep = ssPostInstall then
   begin
     ExePath := ExpandConstant('{app}\{#MyAppExeName}');
-
-    // Registra o serviço
     Exec(ExpandConstant('{sys}\sc.exe'),
          'create {#MyAppServiceName} binpath= "' + ExePath + '" start= auto',
          '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-
-    // Define descrição amigável
     Exec(ExpandConstant('{sys}\sc.exe'),
-         'description {#MyAppServiceName} "Organização automática de arquivos da pasta Downloads"',
+         'description {#MyAppServiceName} "Organizacao automatica de arquivos da pasta Downloads"',
          '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-
-    // Inicia o serviço
     Exec(ExpandConstant('{sys}\sc.exe'), 'start {#MyAppServiceName}', '',
          SW_HIDE, ewWaitUntilTerminated, ResultCode);
   end;
@@ -118,7 +101,6 @@ begin
     Exec(ExpandConstant('{sys}\sc.exe'), 'stop {#MyAppServiceName}', '',
          SW_HIDE, ewWaitUntilTerminated, ResultCode);
     Sleep(3000);
-
     Exec(ExpandConstant('{sys}\sc.exe'), 'delete {#MyAppServiceName}', '',
          SW_HIDE, ewWaitUntilTerminated, ResultCode);
     Sleep(1000);

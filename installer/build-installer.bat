@@ -30,7 +30,7 @@ echo === Listando publish\ ===
 dir publish\ /b 2>nul || echo AVISO: pasta publish nao encontrada
 
 echo === Executando Inno Setup ===
-"%ISCC%" /DMyAppVersion=%VERSION% /DPublishDir="%CD%\publish" /DLicenseDir="%CD%\LICENSE" "installer\installer.iss"
+"%ISCC%" "/DMyAppVersion=%VERSION%" "installer\installer.iss"
 
 if %ERRORLEVEL% neq 0 (
     echo ERRO: Inno Setup falhou com codigo %ERRORLEVEL%
