@@ -3,7 +3,7 @@
 [![Release](https://github.com/vitoaldo/download-redirector/actions/workflows/release.yml/badge.svg)](https://github.com/vitoaldo/download-redirector/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/vitoaldo/download-redirector)](https://github.com/vitoaldo/download-redirector/releases/latest)
 
-Serviço Windows (.NET 8) que monitora e organiza automaticamente os arquivos da pasta **Downloads**, categorizando-os em subpastas por tipo de arquivo. Roda em segundo plano como um Windows Service, sem necessidade de interação.
+Serviço Windows (.NET 8) que monitora e organiza automaticamente arquivos de pastas configuráveis (como **Downloads**), categorizando-os em subpastas ou destinos personalizados por tipo de extensão. Roda em segundo plano como um Windows Service, sem necessidade de interação, recarregando configurações em tempo real.
 
 ---
 
@@ -56,25 +56,51 @@ sc.exe start "DownloadRedirectorService"
 
 ## ⚙️ Configuração
 
-O arquivo `appsettings.json` define as categorias de organização. Cada chave é o nome da subpasta e o valor é uma lista de extensões.
+O arquivo `appsettings.json` define as pastas a serem monitoradas e suas respectivas regras de redirecionamento. As modificações feitas neste arquivo entram em vigor automaticamente no próximo ciclo de varredura (por padrão a cada 20 minutos), sem a necessidade de reiniciar o serviço.
+
+É possível utilizar variáveis de ambiente do Windows, como `%USERPROFILE%`.
 
 **Localização:**
 - Instalação via instalador: `C:\Program Files\DownloadRedirector\appsettings.json`
 - Desenvolvimento local: raiz do projeto
 
-**Categorias padrão:**
+**Exemplo de Configuração (`appsettings.json`):**
 
-| Pasta | Extensões |
-| :--- | :--- |
-| Documentos | `.txt`, `.pdf`, `.doc`, `.docx`, `.xls`, `.xlsx`, `.ppt`, `.pptx`, `.csv` |
-| Videos | `.mp4`, `.mkv`, `.avi`, `.mov`, `.wmv`, `.flv`, `.webm` |
-| Imagens | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp`, `.svg` |
-| Musicas | `.mp3`, `.wav`, `.flac`, `.ogg`, `.aac` |
-| Executaveis | `.exe`, `.msi`, `.bat`, `.cmd`, `.ps1` |
-| Compactados | `.zip`, `.rar`, `.7z`, `.tar`, `.gz` |
-| Codigos | `.cs`, `.js`, `.html`, `.css`, `.json`, `.xml`, `.py`, `.cpp`, `.c` |
-| Isos_e_Imagens | `.iso`, `.img`, `.vdi`, `.vmdk` |
-| Outros | Qualquer extensão não listada acima |
+```json
+{
+  "WatcherSettings": {
+    "Folders": [
+      {
+        "SourcePath": "%USERPROFILE%\\Downloads",
+        "DefaultTargetPath": "%USERPROFILE%\\Downloads\\Outros",
+        "Targets": [
+          {
+            "TargetPath": "%USERPROFILE%\\Downloads\\Documentos",
+            "Extensions": [ ".txt", ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".csv" ]
+          },
+          {
+            "TargetPath": "%USERPROFILE%\\Downloads\\Videos",
+            "Extensions": [ ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm" ]
+          },
+          {
+            "TargetPath": "%USERPROFILE%\\Downloads\\Imagens",
+            "Extensions": [ ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg" ]
+          },
+          {
+            "TargetPath": "%USERPROFILE%\\Downloads\\Executaveis",
+            "Extensions": [ ".exe", ".msi", ".bat", ".cmd", ".ps1" ]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+- **Folders**: Array contendo uma ou múltiplas pastas para vigiar.
+- **SourcePath**: O caminho absoluto (ou relativo a `%USERPROFILE%`) da pasta sendo monitorada.
+- **DefaultTargetPath**: A pasta para onde arquivos não reconhecidos nas extensões alvo serão enviados.
+- **Targets**: Array com os destinos segmentados e sua lista de extensões compatíveis.
 
 > **Nota:** O arquivo `appsettings.json` **não é sobrescrito** em atualizações via instalador, preservando suas personalizações.
 
@@ -108,8 +134,6 @@ Quando rodando como Serviço Windows, os logs são escritos no **Visualizador de
 2. Navegue para: **Logs do Windows → Aplicativo**.
 3. Filtre por fonte de evento `download-redirector`.
 
-> **Dica:** Para logs em arquivo, adicione um provedor como [Serilog](https://serilog.net/) ou [NLog](https://nlog-project.org/).
-
 ---
 
 ## 🛠️ Desenvolvimento
@@ -129,15 +153,11 @@ O projeto usa **GitHub Actions** com **Inno Setup** para gerar instaladores auto
 
 ### Como funciona
 
-```
-git tag v1.0.0 → GitHub Actions → dotnet publish → Inno Setup → Release (.exe)
-```
-
 1. Um desenvolvedor cria uma **tag** no formato `v*.*.*`
-2. O workflow `release.yml` é disparado automaticamente
-3. O código é compilado como single-file self-contained para `win-x64`
-4. O Inno Setup gera o instalador `.exe`
-5. O instalador é publicado na aba **Releases** do GitHub
+2. O workflow `release.yml` é disparado automaticamente.
+3. O código é compilado como single-file self-contained para `win-x64`.
+4. O Inno Setup gera o instalador `.exe`.
+5. O instalador é publicado na aba **Releases** do GitHub.
 
 ### Como criar uma nova release
 
