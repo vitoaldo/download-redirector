@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using download_redirector.Models;
 
 namespace download_redirector;
 
@@ -19,19 +20,8 @@ public class Worker : BackgroundService
 
         try
         {
-            var downloadsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
-            
-            var organizerSettings = _configuration.GetSection("OrganizerSettings").Get<Dictionary<string, string[]>>() ?? new Dictionary<string, string[]>();
-
             while (!stoppingToken.IsCancellationRequested)
             {
-                if (!Directory.Exists(downloadsPath))
-                {
-                    _logger.LogWarning("A pasta Downloads não foi encontrada em: {path}", downloadsPath);
-                    await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
-                    continue;
-                }
-
                 if (_logger.IsEnabled(LogLevel.Information))
                 {
                     _logger.LogInformation("Worker ativou execucao em: {time}", DateTimeOffset.Now);
@@ -39,54 +29,70 @@ public class Worker : BackgroundService
 
                 try
                 {
-                    var files = Directory.EnumerateFiles(downloadsPath);
+                    var watcherSettings = _configuration.GetSection("WatcherSettings").Get<WatcherSettings>();
+                    var foldersToWatch = watcherSettings?.Folders ?? new List<WatchedFolder>();
 
-                    foreach (var file in files)
+                    foreach (var folder in foldersToWatch)
                     {
-                        var extension = Path.GetExtension(file).ToLowerInvariant();
-                        var fileName = Path.GetFileName(file);
-                        
-                        if (extension == ".crdownload" || extension == ".part" || extension == ".tmp")
-                            continue;
+                        var sourcePath = Environment.ExpandEnvironmentVariables(folder.SourcePath);
+                        var defaultTargetPath = string.IsNullOrWhiteSpace(folder.DefaultTargetPath) 
+                            ? Path.Combine(sourcePath, "Outros") 
+                            : Environment.ExpandEnvironmentVariables(folder.DefaultTargetPath);
 
-                        if (IsFileLocked(file))
+                        if (!Directory.Exists(sourcePath))
                         {
-                            _logger.LogDebug("Arquivo ignorado por estar em uso (presumivelmente baixando): {file}", fileName);
+                            _logger.LogWarning("A pasta monitorada nao foi encontrada: {path}", sourcePath);
                             continue;
                         }
 
-                        string targetFolderCategory = "Outros";
+                        var files = Directory.EnumerateFiles(sourcePath);
 
-                        foreach (var category in organizerSettings)
+                        foreach (var file in files)
                         {
-                            if (category.Value.Contains(extension))
+                            var extension = Path.GetExtension(file).ToLowerInvariant();
+                            var fileName = Path.GetFileName(file);
+                            
+                            if (extension == ".crdownload" || extension == ".part" || extension == ".tmp")
+                                continue;
+
+                            if (IsFileLocked(file))
                             {
-                                targetFolderCategory = category.Key;
-                                break;
+                                _logger.LogDebug("Arquivo ignorado por estar em uso (presumivelmente baixando): {file}", fileName);
+                                continue;
                             }
+
+                            string targetDirectoryPath = defaultTargetPath;
+
+                            foreach (var target in folder.Targets)
+                            {
+                                if (target.Extensions.Any(e => string.Equals(e, extension, StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    targetDirectoryPath = Environment.ExpandEnvironmentVariables(target.TargetPath);
+                                    break;
+                                }
+                            }
+
+                            var targetFilePath = Path.Combine(targetDirectoryPath, fileName);
+
+                            if (!Directory.Exists(targetDirectoryPath))
+                            {
+                                Directory.CreateDirectory(targetDirectoryPath);
+                            }
+
+                            if (File.Exists(targetFilePath))
+                            {
+                                var fileNameWithoutExt = Path.GetFileNameWithoutExtension(file);
+                                targetFilePath = Path.Combine(targetDirectoryPath, $"{fileNameWithoutExt}_{DateTime.Now:yyyyMMddHHmmss}{extension}");
+                            }
+
+                            File.Move(file, targetFilePath);
+                            _logger.LogInformation("Arquivo movido com sucesso: {file} para a pasta {targetDirectory}", fileName, targetDirectoryPath);
                         }
-
-                        var targetDirectoryPath = Path.Combine(downloadsPath, targetFolderCategory);
-                        var targetFilePath = Path.Combine(targetDirectoryPath, fileName);
-
-                        if (!Directory.Exists(targetDirectoryPath))
-                        {
-                            Directory.CreateDirectory(targetDirectoryPath);
-                        }
-
-                        if (File.Exists(targetFilePath))
-                        {
-                            var fileNameWithoutExt = Path.GetFileNameWithoutExtension(file);
-                            targetFilePath = Path.Combine(targetDirectoryPath, $"{fileNameWithoutExt}_{DateTime.Now:yyyyMMddHHmmss}{extension}");
-                        }
-
-                        File.Move(file, targetFilePath);
-                        _logger.LogInformation("Arquivo movido com sucesso: {file} para a pasta {category}", fileName, targetFolderCategory);
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Erro inesperado ao tentar organizar os arquivos da pasta Downloads.");
+                    _logger.LogError(ex, "Erro inesperado ao tentar organizar os arquivos.");
                 }
                 
                 await Task.Delay(TimeSpan.FromMinutes(20), stoppingToken);

@@ -7,7 +7,7 @@
     <UserSecretsId>dotnet-download_redirector-0c34896a-be1e-4261-8910-33a4a7b61acf</UserSecretsId>
     <RootNamespace>download_redirector</RootNamespace>
 
-    <!-- Versionamento e metadados -->
+
     <Version>1.0.0</Version>
     <AssemblyVersion>1.0.0</AssemblyVersion>
     <FileVersion>1.0.0</FileVersion>
