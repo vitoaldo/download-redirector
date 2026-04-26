@@ -2,6 +2,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using download_redirector.Models;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace download_redirector.Services;
 
@@ -11,6 +13,10 @@ public class OrganizerService : BackgroundService
     private readonly IConfiguration _configuration;
     
     public bool IsPaused { get; private set; } = false;
+
+    [DllImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetProcessWorkingSetSize(IntPtr process, IntPtr minimumWorkingSetSize, IntPtr maximumWorkingSetSize);
 
     public OrganizerService(ILogger<OrganizerService> logger, IConfiguration configuration)
     {
@@ -36,6 +42,10 @@ public class OrganizerService : BackgroundService
                 {
                     PerformOrganization(watcherSettings);
                 }
+
+                // Esvaziamento Extremo de RAM:
+                // Quando o app terminar o trabalho, forçamos o Windows a transferir toda a RAM alocada para o disco de paginação
+                TrimMemory();
 
                 await Task.Delay(TimeSpan.FromMinutes(intervalMinutes), stoppingToken);
             }
@@ -68,6 +78,22 @@ public class OrganizerService : BackgroundService
                     continue;
                 }
 
+                // Otimização CPU: Cacheamos as strings expandidas fora do loop gigante de arquivos
+                var targetCache = new List<(string TargetPath, List<string> Extensions)>();
+                if (folder.Targets != null)
+                {
+                    foreach (var target in folder.Targets)
+                    {
+                        if (target.Extensions != null && target.Extensions.Any())
+                        {
+                            targetCache.Add((
+                                Environment.ExpandEnvironmentVariables(target.TargetPath),
+                                target.Extensions.Select(e => e.ToLowerInvariant()).ToList()
+                            ));
+                        }
+                    }
+                }
+
                 var files = Directory.EnumerateFiles(sourcePath);
 
                 foreach (var file in files)
@@ -85,11 +111,11 @@ public class OrganizerService : BackgroundService
 
                     string targetDirectoryPath = defaultTargetPath;
 
-                    foreach (var target in folder.Targets)
+                    foreach (var target in targetCache)
                     {
-                        if (target.Extensions.Any(e => string.Equals(e, extension, StringComparison.OrdinalIgnoreCase)))
+                        if (target.Extensions.Contains(extension))
                         {
-                            targetDirectoryPath = Environment.ExpandEnvironmentVariables(target.TargetPath);
+                            targetDirectoryPath = target.TargetPath;
                             break;
                         }
                     }
@@ -130,5 +156,19 @@ public class OrganizerService : BackgroundService
             return true;
         }
         return false;
+    }
+
+    private void TrimMemory()
+    {
+        try
+        {
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+            GC.WaitForPendingFinalizers();
+            SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, (IntPtr)(-1), (IntPtr)(-1));
+        }
+        catch
+        {
+            // Failsafe silencioso
+        }
     }
 }
