@@ -3,9 +3,9 @@
 ; =============================================================================
 ; Gera um instalador profissional para Windows que:
 ;   - Copia os binarios para Program Files
-;   - Registra e inicia o Windows Service automaticamente
+;   - Adiciona atalho na inicializacao (Startup) do Windows
 ;   - Preserva o appsettings.json do usuario em atualizacoes
-;   - Para e remove o servico na desinstalacao
+;   - Fecha o aplicativo antes de atualizar/desinstalar
 ;
 ; Uso local:  iscc installer.iss
 ; Uso no CI:  iscc /DMyAppVersion=1.2.3 /DMyPublishDir=C:\path\publish /DMyLicenseFile=C:\path\LICENSE installer.iss
@@ -13,7 +13,7 @@
 
 ; -- Variaveis de compilacao (sobrescritas pelo CI via /D) --------------------
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.0"
+  #define MyAppVersion "1.2.0"
 #endif
 #ifndef MyPublishDir
   #define MyPublishDir "..\publish"
@@ -26,7 +26,6 @@
 #define MyAppName        "Download Redirector"
 #define MyAppExeName     "download-redirector.exe"
 #define MyAppPublisher   "Victor Adalto Cavalcanti Valentim"
-#define MyAppServiceName "DownloadRedirectorService"
 
 [Setup]
 AppId={{8F4C3B2A-1D5E-4F6A-B7C8-9D0E1F2A3B4C}
@@ -62,47 +61,38 @@ Source: "{#MyPublishDir}\appsettings.json"; DestDir: "{app}"; Flags: onlyifdoesn
 ; Licenca para referencia
 Source: "{#MyLicenseFile}"; DestDir: "{app}"; Flags: ignoreversion
 
+[Icons]
+; Cria um atalho no Menu Iniciar
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+; Cria um atalho na pasta Inicializar (Startup) para iniciar com o Windows
+Name: "{autostartup}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+
+[Run]
+; Inicia o aplicativo logo apos a instalacao
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+
 [Code]
-procedure CurStepChanged(CurStep: TSetupStep);
+// Funcao para matar o processo antes de instalar ou desinstalar para evitar bloqueio de arquivo
+procedure KillAppProcess;
 var
   ResultCode: Integer;
-  ExePath: String;
+begin
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM {#MyAppExeName} /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Sleep(1000);
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssInstall then
   begin
-    Exec(ExpandConstant('{sys}\sc.exe'), 'stop {#MyAppServiceName}', '',
-         SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    Sleep(2000);
-    Exec(ExpandConstant('{sys}\sc.exe'), 'delete {#MyAppServiceName}', '',
-         SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    Sleep(1000);
-  end;
-
-  if CurStep = ssPostInstall then
-  begin
-    ExePath := ExpandConstant('{app}\{#MyAppExeName}');
-    Exec(ExpandConstant('{sys}\sc.exe'),
-         'create {#MyAppServiceName} binpath= "' + ExePath + '" start= auto',
-         '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    Exec(ExpandConstant('{sys}\sc.exe'),
-         'description {#MyAppServiceName} "Organizacao automatica de arquivos da pasta Downloads"',
-         '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    Exec(ExpandConstant('{sys}\sc.exe'), 'start {#MyAppServiceName}', '',
-         SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    KillAppProcess();
   end;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
-var
-  ResultCode: Integer;
 begin
   if CurUninstallStep = usUninstall then
   begin
-    Exec(ExpandConstant('{sys}\sc.exe'), 'stop {#MyAppServiceName}', '',
-         SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    Sleep(3000);
-    Exec(ExpandConstant('{sys}\sc.exe'), 'delete {#MyAppServiceName}', '',
-         SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    Sleep(1000);
+    KillAppProcess();
   end;
 end;
