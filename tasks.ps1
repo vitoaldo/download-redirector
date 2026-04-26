@@ -18,7 +18,7 @@ switch ($Task) {
     "installer" {
         Write-Host "=> Gerando instalador (Build)..." -ForegroundColor Green
         # Aqui você pode mudar a versão conforme a release
-        & .\installer\build-installer.bat "1.2.1"
+        & .\installer\build-installer.bat "1.2.2"
     }
     "help" {
         Write-Host "=============================================" -ForegroundColor Cyan
