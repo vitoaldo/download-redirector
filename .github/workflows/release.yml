@@ -25,6 +25,9 @@ jobs:
       - name: Restaurar dependências
         run: dotnet restore
 
+      - name: Executar testes
+        run: dotnet test --no-restore --verbosity normal
+
       - name: Publicar (single-file, self-contained)
         run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -o ./publish
 

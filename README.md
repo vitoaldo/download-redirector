@@ -1,74 +1,54 @@
-# Download Redirector Service
+# Download Redirector
 
-[![Release](https://github.com/vitoaldo/download-redirector/actions/workflows/release.yml/badge.svg)](https://github.com/vitoaldo/download-redirector/actions/workflows/release.yml)
-[![Latest Release](https://img.shields.io/github/v/release/vitoaldo/download-redirector)](https://github.com/vitoaldo/download-redirector/releases/latest)
+[![Build Status](https://github.com/vitoaldo/download-redirector/actions/workflows/release.yml/badge.svg)](https://github.com/vitoaldo/download-redirector/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-Serviço Windows (.NET 8) que monitora e organiza automaticamente arquivos de pastas configuráveis (como **Downloads**), categorizando-os em subpastas ou destinos personalizados por tipo de extensão. Roda em segundo plano como um Windows Service, sem necessidade de interação, recarregando configurações em tempo real.
+O Download Redirector é um aplicativo de bandeja super leve para Windows, criado para organizar sua vida digital de forma automatizada. Ele monitora continuamente suas pastas (como a de Downloads) e transfere arquivos para os diretórios corretos com base em suas extensões. Ele roda silenciosamente em segundo plano e foi desenhado para usar quase zero do seu processamento.
 
 ---
 
-## 📥 Instalação
+## 🚀 O que ele faz?
 
-### Via Instalador (Recomendado)
+Construído em `.NET 8` com foco absoluto em performance, este projeto:
+1. Coloca um pequeno ícone na bandeja do seu sistema (junto ao relógio).
+2. De tempos em tempos, verifica as pastas que você configurou.
+3. Se encontrar algo, separa e organiza automaticamente.
+4. Foi programado em baixo nível para delegar a prioridade da sua thread ao Sistema Operacional. Ele roda estritamente nos ciclos ociosos da sua CPU, garantindo que você nunca terá perda de performance em outras atividades (como jogar ou trabalhar pesado).
 
-1. Acesse a página de [Releases](https://github.com/vitoaldo/download-redirector/releases/latest).
-2. Baixe o arquivo `DownloadRedirector-Setup-x.x.x.exe`.
-3. Execute como **Administrador**.
-4. Pronto! O serviço será instalado e iniciado automaticamente.
+---
 
-> **Desinstalar:** Use **Adicionar ou Remover Programas** do Windows, ou execute o desinstalador presente na pasta de instalação.
+## 🛠️ Como rodar e desenvolver localmente
 
-### Via Linha de Comando (Manual)
+Se você deseja rodar no seu ambiente, modificar o código ou adicionar novos recursos, o fluxo é bastante simples.
 
-Para instalar manualmente sem o instalador, siga os passos abaixo.
+### Pré-requisitos
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 
-#### Pré-requisitos
-
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) instalado.
-
-#### 1. Gerar o Executável
-
+### Script rápido para rodar
+Abra o seu terminal na raiz do projeto e execute:
 ```powershell
-dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish
+dotnet run --project download-redirector
 ```
+O projeto será compilado e o ícone aparecerá automaticamente na sua barra de tarefas! Clique com o botão direito nele para acessar as configurações ou pausar o serviço.
 
-O arquivo `.exe` resultante estará na pasta `./publish/`.
-
-#### 2. Registrar o Serviço
-
-Abra um **Terminal (PowerShell) em modo Administrador**:
-
+### Testes
+Nós mantemos a qualidade através de uma suíte de testes. Para rodar todos os testes localmente:
 ```powershell
-# Via sc.exe (atenção ao espaço obrigatório após "binpath=")
-sc.exe create "DownloadRedirectorService" binpath= "C:\Caminho\Completo\publish\download-redirector.exe" start= auto
-
-# Ou via PowerShell nativo:
-New-Service -Name "DownloadRedirectorService" -BinaryPathName "C:\Caminho\Completo\publish\download-redirector.exe" -StartupType Automatic
-```
-
-#### 3. Iniciar o Serviço
-
-```powershell
-sc.exe start "DownloadRedirectorService"
+dotnet test
 ```
 
 ---
 
-## ⚙️ Configuração
+## ⚙️ Configurando as Regras
 
-O arquivo `appsettings.json` define as pastas a serem monitoradas e suas respectivas regras de redirecionamento. As modificações feitas neste arquivo entram em vigor automaticamente no próximo ciclo de varredura (por padrão a cada 20 minutos), sem a necessidade de reiniciar o serviço.
+A mágica acontece lendo as configurações do arquivo `appsettings.json`. Você pode editá-lo diretamente pelo aplicativo (clicando em "Configurações").
 
-É possível utilizar variáveis de ambiente do Windows, como `%USERPROFILE%`.
-
-**Localização:**
-- Instalação via instalador: `C:\Program Files\DownloadRedirector\appsettings.json`
-- Desenvolvimento local: raiz do projeto
-
-**Exemplo de Configuração (`appsettings.json`):**
+Aqui está a estrutura de exemplo:
 
 ```json
 {
   "WatcherSettings": {
+    "ExecutionIntervalMinutes": 20,
     "Folders": [
       {
         "SourcePath": "%USERPROFILE%\\Downloads",
@@ -76,19 +56,11 @@ O arquivo `appsettings.json` define as pastas a serem monitoradas e suas respect
         "Targets": [
           {
             "TargetPath": "%USERPROFILE%\\Downloads\\Documentos",
-            "Extensions": [ ".txt", ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".csv" ]
+            "Extensions": [ ".txt", ".pdf", ".docx", ".xlsx", ".pptx", ".csv" ]
           },
           {
-            "TargetPath": "%USERPROFILE%\\Downloads\\Videos",
-            "Extensions": [ ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm" ]
-          },
-          {
-            "TargetPath": "%USERPROFILE%\\Downloads\\Imagens",
-            "Extensions": [ ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg" ]
-          },
-          {
-            "TargetPath": "%USERPROFILE%\\Downloads\\Executaveis",
-            "Extensions": [ ".exe", ".msi", ".bat", ".cmd", ".ps1" ]
+            "TargetPath": "D:\\MeusVideos",
+            "Extensions": [ ".mp4", ".mkv", ".avi", ".webm" ]
           }
         ]
       }
@@ -97,88 +69,23 @@ O arquivo `appsettings.json` define as pastas a serem monitoradas e suas respect
 }
 ```
 
-- **Folders**: Array contendo uma ou múltiplas pastas para vigiar.
-- **SourcePath**: O caminho absoluto (ou relativo a `%USERPROFILE%`) da pasta sendo monitorada.
-- **DefaultTargetPath**: A pasta para onde arquivos não reconhecidos nas extensões alvo serão enviados.
-- **Targets**: Array com os destinos segmentados e sua lista de extensões compatíveis.
-
-> **Nota:** O arquivo `appsettings.json` **não é sobrescrito** em atualizações via instalador, preservando suas personalizações.
+**Destaques:**
+- `ExecutionIntervalMinutes`: A cada quantos minutos a varredura deve ocorrer.
+- `SourcePath`: Pode ser um caminho absoluto (`C:\pasta`) ou usar variáveis do Windows (`%USERPROFILE%\pasta`).
+- O aplicativo entende essas mudanças sem precisar ser reiniciado. Apenas salve o arquivo!
 
 ---
 
-## 📋 Gerenciamento do Serviço
+## 🗂️ Arquitetura do Projeto
 
-Todos os comandos abaixo exigem um **Terminal em modo Administrador**.
+Nós adotamos padrões de código limpo para que seja fácil entender e expandir o aplicativo. Se você for contribuir, note os três pilares do repositório:
+- `Services/OrganizerService.cs`: O "motor" por trás de tudo. É onde o monitoramento acontece usando assincronicidade e manipulação de arquivos.
+- `UI/MainApplicationContext.cs`: Este é o esqueleto do nosso app de bandeja. Ele desenha o ícone usando primitivas gráficas nativas e não depende de imagens externas para funcionar.
+- `UI/ThemeManager.cs`: Central de UI/UX. Todos os controles (sejam caixas de texto ou botões) recebem suas cores a partir daqui, já suportando Modo Claro e Escuro de forma amigável.
 
-```powershell
-# Verificar status
-sc.exe query "DownloadRedirectorService"
-
-# Parar o serviço
-sc.exe stop "DownloadRedirectorService"
-
-# Iniciar o serviço
-sc.exe start "DownloadRedirectorService"
-
-# Remover o serviço (pare-o antes)
-sc.exe delete "DownloadRedirectorService"
-```
+Sempre que criar uma nova tela, lembre-se de chamar `ThemeManager.ApplyTheme(this)` no construtor.
 
 ---
 
-## 📄 Logs
-
-Quando rodando como Serviço Windows, os logs são escritos no **Visualizador de Eventos (Event Viewer)**:
-
-1. Pressione `Win + R`, digite `eventvwr` e pressione ENTER.
-2. Navegue para: **Logs do Windows → Aplicativo**.
-3. Filtre por fonte de evento `download-redirector`.
-
----
-
-## 🛠️ Desenvolvimento
-
-```powershell
-# Rodar localmente (modo console)
-dotnet run
-
-# Para parar, pressione Ctrl+C
-```
-
----
-
-## 🚀 CI/CD — Releases Automáticas
-
-O projeto usa **GitHub Actions** com **Inno Setup** para gerar instaladores automaticamente.
-
-### Como funciona
-
-1. Um desenvolvedor cria uma **tag** no formato `v*.*.*`
-2. O workflow `release.yml` é disparado automaticamente.
-3. O código é compilado como single-file self-contained para `win-x64`.
-4. O Inno Setup gera o instalador `.exe`.
-5. O instalador é publicado na aba **Releases** do GitHub.
-
-### Como criar uma nova release
-
-```powershell
-# 1. Atualize a versão no .csproj (opcional, mas recomendado)
-# 2. Commit e push das alterações
-git add .
-git commit -m "release: v1.1.0"
-git push
-
-# 3. Crie e envie a tag
-git tag v1.1.0
-git push origin v1.1.0
-```
-
-A release aparecerá automaticamente em: [github.com/vitoaldo/download-redirector/releases](https://github.com/vitoaldo/download-redirector/releases)
-
----
-
-## 📜 Licença
-
-Este projeto está licenciado sob a [MIT License](LICENSE).
-
-Copyright (c) 2026 Victor Adalto Cavalcanti Valentim
+## 📄 Licença
+Distribuído sob a licença MIT. Veja o arquivo `LICENSE` para mais informações.

@@ -2,6 +2,7 @@ namespace download_redirector.Models;
 
 public class WatcherSettings
 {
+    public int ExecutionIntervalMinutes { get; set; } = 20;
     public List<WatchedFolder> Folders { get; set; } = new();
 }
 
