@@ -46,10 +46,54 @@ public static class ThemeManager
             control.BackColor = PanelColor;
             control.ForeColor = ForeColor;
         }
+        else if (control is TabControl tabControl)
+        {
+            tabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
+            tabControl.DrawItem -= TabControl_DrawItem;
+            tabControl.DrawItem += TabControl_DrawItem;
+            tabControl.BackColor = BackColor;
+        }
+        else if (control is TabPage tabPage)
+        {
+            tabPage.BackColor = BackColor;
+            tabPage.ForeColor = ForeColor;
+        }
+        else if (control is TagInputControl tagControl)
+        {
+            tagControl.ApplyTheme();
+        }
 
         foreach (Control child in control.Controls)
         {
             ApplyThemeToControl(child);
         }
+    }
+
+    private static void TabControl_DrawItem(object? sender, DrawItemEventArgs e)
+    {
+        if (sender is not TabControl tabControl) return;
+
+        Graphics g = e.Graphics;
+        Brush textBrush;
+        Rectangle tabBounds = tabControl.GetTabRect(e.Index);
+
+        if (e.State == DrawItemState.Selected)
+        {
+            g.FillRectangle(new SolidBrush(BackColor), e.Bounds);
+            textBrush = new SolidBrush(ButtonColor);
+        }
+        else
+        {
+            g.FillRectangle(new SolidBrush(PanelColor), e.Bounds);
+            textBrush = new SolidBrush(ForeColor);
+        }
+
+        Font tabFont = new Font(tabControl.Font, FontStyle.Bold);
+        StringFormat stringFlags = new StringFormat
+        {
+            Alignment = StringAlignment.Center,
+            LineAlignment = StringAlignment.Center
+        };
+        g.DrawString(tabControl.TabPages[e.Index].Text, tabFont, textBrush, tabBounds, new StringFormat(stringFlags));
     }
 }

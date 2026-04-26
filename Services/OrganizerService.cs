@@ -43,8 +43,6 @@ public class OrganizerService : BackgroundService
                     PerformOrganization(watcherSettings);
                 }
 
-                // Esvaziamento Extremo de RAM:
-                // Quando o app terminar o trabalho, forçamos o Windows a transferir toda a RAM alocada para o disco de paginação
                 TrimMemory();
 
                 await Task.Delay(TimeSpan.FromMinutes(intervalMinutes), stoppingToken);
@@ -61,16 +59,27 @@ public class OrganizerService : BackgroundService
 
     private void PerformOrganization(WatcherSettings settings)
     {
-        try
-        {
-            var foldersToWatch = settings.Folders ?? new List<WatchedFolder>();
+        var foldersToWatch = settings.Folders ?? new List<WatchedFolder>();
 
-            foreach (var folder in foldersToWatch)
+        foreach (var folder in foldersToWatch)
+        {
+            try
             {
                 var sourcePath = Environment.ExpandEnvironmentVariables(folder.SourcePath);
                 var defaultTargetPath = string.IsNullOrWhiteSpace(folder.DefaultTargetPath) 
                     ? Path.Combine(sourcePath, "Outros") 
                     : Environment.ExpandEnvironmentVariables(folder.DefaultTargetPath);
+
+                var root = Path.GetPathRoot(sourcePath);
+                if (!string.IsNullOrEmpty(root))
+                {
+                    var driveInfo = new DriveInfo(root);
+                    if (driveInfo.DriveType == DriveType.Removable && !driveInfo.IsReady)
+                    {
+                        _logger.LogWarning("Disco removivel nao esta pronto ou desconectado: {path}", root);
+                        continue;
+                    }
+                }
 
                 if (!Directory.Exists(sourcePath))
                 {
@@ -78,7 +87,6 @@ public class OrganizerService : BackgroundService
                     continue;
                 }
 
-                // Otimização CPU: Cacheamos as strings expandidas fora do loop gigante de arquivos
                 var targetCache = new List<(string TargetPath, List<string> Extensions)>();
                 if (folder.Targets != null)
                 {
@@ -137,10 +145,18 @@ public class OrganizerService : BackgroundService
                     _logger.LogInformation("Arquivo movido com sucesso: {file} para a pasta {targetDirectory}", fileName, targetDirectoryPath);
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Erro inesperado ao organizar arquivos.");
+            catch (DirectoryNotFoundException)
+            {
+                _logger.LogWarning("Diretorio desconectado durante a varredura: {sourcePath}", folder.SourcePath);
+            }
+            catch (IOException)
+            {
+                _logger.LogWarning("Erro de I/O na pasta (disco pode ter sido removido): {sourcePath}", folder.SourcePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro inesperado ao organizar a pasta: {sourcePath}", folder.SourcePath);
+            }
         }
     }
 
@@ -168,7 +184,6 @@ public class OrganizerService : BackgroundService
         }
         catch
         {
-            // Failsafe silencioso
         }
     }
 }
