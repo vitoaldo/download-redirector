@@ -5,6 +5,8 @@
   <h3><a href="https://github.com/vitoaldo/download-redirector/releases/latest">⬇️ Baixar Instalador (.exe) - Última Versão</a></h3>
   <br/>
 </div>
+---
+
 [![Build Status](https://github.com/vitoaldo/download-redirector/actions/workflows/release.yml/badge.svg)](https://github.com/vitoaldo/download-redirector/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![.NET Version](https://img.shields.io/badge/.NET-9.0-purple.svg)](https://dotnet.microsoft.com/)
