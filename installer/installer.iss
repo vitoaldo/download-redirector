@@ -43,13 +43,12 @@ Compression=lzma2/ultra64
 SolidCompression=yes
 PrivilegesRequired=admin
 WizardStyle=modern
-ArchitecturesAllowed=x64compatible
-ArchitecturesInstallMode=x64compatible
+ArchitecturesAllowed=x64
 MinVersion=10.0
 UninstallDisplayName={#MyAppName}
 
 [Languages]
-Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 
 [Files]
 ; Binario principal (sempre sobrescreve em atualizacoes)
