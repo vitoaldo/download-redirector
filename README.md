@@ -25,17 +25,29 @@ Se você deseja rodar no seu ambiente, modificar o código ou adicionar novos re
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 
 ### Script rápido para rodar
-Abra o seu terminal na raiz do projeto e execute:
+Para facilitar a vida de todos os desenvolvedores, criamos um **Task Runner** que funciona de maneira idêntica aos scripts de um `package.json` no mundo JavaScript.
+
+Basta abrir o seu terminal na raiz do projeto e usar o nosso script:
+
+**Se você usar PowerShell:**
 ```powershell
-dotnet run --project download-redirector
+.\tasks.ps1 start
 ```
+
+**Se você usar Prompt de Comando (CMD):**
+```cmd
+tasks.bat start
+```
+
 O projeto será compilado e o ícone aparecerá automaticamente na sua barra de tarefas! Clique com o botão direito nele para acessar as configurações ou pausar o serviço.
 
-### Testes
-Nós mantemos a qualidade através de uma suíte de testes. Para rodar todos os testes localmente:
-```powershell
-dotnet test
-```
+### Comandos de Desenvolvimento
+Você pode rodar as seguintes tarefas de desenvolvimento usando o script (`tasks.bat <comando>` ou `.\tasks.ps1 <comando>`):
+- `start`: Inicia a aplicação no seu desktop (usando `dotnet run`)
+- `test`: Executa toda a suíte de testes unitários para garantir que não haja bugs
+- `build`: Apenas compila o código (útil para CI)
+- `installer`: Empacota e cria o `.exe` de instalação limpa (requer Inno Setup)
+- `help`: Mostra o menu de ajuda com a lista de comandos
 
 ---
 
