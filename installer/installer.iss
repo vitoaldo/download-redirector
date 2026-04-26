@@ -13,7 +13,7 @@
 
 ; -- Variaveis de compilacao (sobrescritas pelo CI via /D) --------------------
 #ifndef MyAppVersion
-  #define MyAppVersion "1.2.0"
+  #define MyAppVersion "1.2.1"
 #endif
 #ifndef MyPublishDir
   #define MyPublishDir "..\publish"

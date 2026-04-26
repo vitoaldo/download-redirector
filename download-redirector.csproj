@@ -9,9 +9,9 @@
     <UserSecretsId>dotnet-download_redirector-0c34896a-be1e-4261-8910-33a4a7b61acf</UserSecretsId>
     <RootNamespace>download_redirector</RootNamespace>
 
-    <Version>1.2.0</Version>
-    <AssemblyVersion>1.2.0</AssemblyVersion>
-    <FileVersion>1.2.0</FileVersion>
+    <Version>1.2.1</Version>
+    <AssemblyVersion>1.2.1</AssemblyVersion>
+    <FileVersion>1.2.1</FileVersion>
     <Product>Download Redirector</Product>
     <Company>vitoaldo</Company>
     <Authors>Victor Adalto Cavalcanti Valentim</Authors>

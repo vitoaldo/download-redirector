@@ -30,7 +30,7 @@ goto end
 
 :installer
 echo =^> Gerando instalador (Build)...
-call installer\build-installer.bat 1.2.0
+call installer\build-installer.bat 1.2.1
 goto end
 
 :help
