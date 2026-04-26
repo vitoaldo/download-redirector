@@ -2,60 +2,58 @@
 
 [![Build Status](https://github.com/vitoaldo/download-redirector/actions/workflows/release.yml/badge.svg)](https://github.com/vitoaldo/download-redirector/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![.NET Version](https://img.shields.io/badge/.NET-9.0-purple.svg)](https://dotnet.microsoft.com/)
 
-O Download Redirector é um aplicativo de bandeja super leve para Windows, criado para organizar sua vida digital de forma automatizada. Ele monitora continuamente suas pastas (como a de Downloads) e transfere arquivos para os diretórios corretos com base em suas extensões. Ele roda silenciosamente em segundo plano e foi desenhado para usar quase zero do seu processamento.
-
----
-
-## 🚀 O que ele faz?
-
-Construído em `.NET 8` com foco absoluto em performance, este projeto:
-1. Coloca um pequeno ícone na bandeja do seu sistema (junto ao relógio).
-2. De tempos em tempos, verifica as pastas que você configurou.
-3. Se encontrar algo, separa e organiza automaticamente.
-4. Foi programado em baixo nível para delegar a prioridade da sua thread ao Sistema Operacional. Ele roda estritamente nos ciclos ociosos da sua CPU, garantindo que você nunca terá perda de performance em outras atividades (como jogar ou trabalhar pesado).
+O Download Redirector é um aplicativo de bandeja (System Tray) para Windows, extremamente leve e focado em alta performance. Ele automatiza a organização da sua vida digital, monitorando múltiplas pastas de sua escolha e transferindo arquivos para diretórios específicos com base nas suas extensões. Tudo isso silenciosamente, sem roubar recursos preciosos do seu processador.
 
 ---
 
-## 🛠️ Como rodar e desenvolver localmente
+## ✨ Principais Funcionalidades
 
-Se você deseja rodar no seu ambiente, modificar o código ou adicionar novos recursos, o fluxo é bastante simples.
+- **Múltiplos Diretórios e Regras Avançadas**: Você não está mais restrito à pasta Downloads. Adicione quantas pastas quiser para serem vigiadas e defina múltiplos caminhos de destino escolhidos a dedo pelas extensões que devem receber.
+- **Interface Visual (UI/UX)**: Esqueça arquivos complexos ocultos. O aplicativo agora conta com uma interface limpa, intuitiva e moderna, acessível direto da barra de tarefas, com suporte nativo a **Modos Claro e Escuro**.
+- **Controle em Tempo Real**: Pause e retome a organização automática a qualquer momento, além de controlar qual será o intervalo de tempo exato de execução das varreduras através das Configurações.
+- **Otimização Extrema de Performance (Kernel-Level)**: Migrado estruturalmente para o novíssimo **.NET 9**, o aplicativo instrui o escalonador do Windows a executá-lo com a prioridade mais baixa possível (`Idle`). Isso garante que ele só utilizará os núcleos físicos ou lógicos do processador se estiverem 100% ociosos. Jogos e softwares de edição jamais sofrerão impacto.
+- **Ícone Dinâmico e Independente**: O ícone do programa é gerado dinamicamente via código na memória nativa, sem depender de arquivos de imagem (.ico/.png) instalados na máquina, mantendo o binário hiper-compacto e com zero quebras.
+- **Instalador Traduzido (pt-BR)**: O empacotamento com GitHub Actions e Inno Setup gera um executável `.exe` totalmente em Português do Brasil de forma limpa, criando seu próprio atalho de inicialização automática (Startup) junto ao Windows.
+
+---
+
+## 🚀 Como rodar e desenvolver localmente
+
+Pensando na melhor experiência de desenvolvimento, adotamos a mecânica prática de **Task Runner** (similar aos scripts de um `package.json` de Node/JS).
 
 ### Pré-requisitos
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 
-### Script rápido para rodar
-Para facilitar a vida de todos os desenvolvedores, criamos um **Task Runner** que funciona de maneira idêntica aos scripts de um `package.json` no mundo JavaScript.
+### Usando o Task Runner
+Abra o terminal na raiz do projeto e use o nosso script gerenciador:
 
-Basta abrir o seu terminal na raiz do projeto e usar o nosso script:
-
-**Se você usar PowerShell:**
+**Se usar PowerShell:**
 ```powershell
 .\tasks.ps1 start
 ```
 
-**Se você usar Prompt de Comando (CMD):**
+**Se usar CMD (Prompt de Comando):**
 ```cmd
 tasks.bat start
 ```
 
-O projeto será compilado e o ícone aparecerá automaticamente na sua barra de tarefas! Clique com o botão direito nele para acessar as configurações ou pausar o serviço.
+O projeto será compilado com todos os pacotes restaurados e o ícone azul do app aparecerá automaticamente perto do seu relógio do Windows!
 
-### Comandos de Desenvolvimento
-Você pode rodar as seguintes tarefas de desenvolvimento usando o script (`tasks.bat <comando>` ou `.\tasks.ps1 <comando>`):
-- `start`: Inicia a aplicação no seu desktop (usando `dotnet run`)
-- `test`: Executa toda a suíte de testes unitários para garantir que não haja bugs
-- `build`: Apenas compila o código (útil para CI)
-- `installer`: Empacota e cria o `.exe` de instalação limpa (requer Inno Setup)
-- `help`: Mostra o menu de ajuda com a lista de comandos
+### Comandos de Desenvolvimento Disponíveis
+Ao usar o `tasks.bat` ou `.\tasks.ps1`, você tem acesso rápido aos fluxos padronizados:
+- `start` : Inicia a aplicação no seu desktop
+- `test` : Executa toda a suíte de testes unitários (xUnit) garantindo a integridade do código
+- `build` : Apenas compila o código e os testes (útil para validar a sintaxe e gerar builds temporárias)
+- `installer` : Compila os binários de Release e gera o `.exe` final de instalação (requer o compilador *Inno Setup* instalado localmente)
+- `help` : Lista na tela os comandos disponíveis
 
 ---
 
-## ⚙️ Configurando as Regras
+## ⚙️ Regras de Organização Avançadas
 
-A mágica acontece lendo as configurações do arquivo `appsettings.json`. Você pode editá-lo diretamente pelo aplicativo (clicando em "Configurações").
-
-Aqui está a estrutura de exemplo:
+Ao clicar em "Configurações" pelo ícone da bandeja, você terá acesso imediato à edição do arquivo `appsettings.json`. A nova estrutura permite uma rede infinita de origens e destinos:
 
 ```json
 {
@@ -68,11 +66,21 @@ Aqui está a estrutura de exemplo:
         "Targets": [
           {
             "TargetPath": "%USERPROFILE%\\Downloads\\Documentos",
-            "Extensions": [ ".txt", ".pdf", ".docx", ".xlsx", ".pptx", ".csv" ]
+            "Extensions": [ ".txt", ".pdf", ".docx", ".xlsx" ]
           },
           {
-            "TargetPath": "D:\\MeusVideos",
-            "Extensions": [ ".mp4", ".mkv", ".avi", ".webm" ]
+            "TargetPath": "D:\\Arquivos_Pesados\\Videos",
+            "Extensions": [ ".mp4", ".mkv", ".avi" ]
+          }
+        ]
+      },
+      {
+        "SourcePath": "C:\\Pasta_Trabalho_Baguncada",
+        "DefaultTargetPath": "C:\\Arquivados",
+        "Targets": [
+          {
+            "TargetPath": "C:\\Relatorios",
+            "Extensions": [ ".csv", ".xml" ]
           }
         ]
       }
@@ -81,23 +89,23 @@ Aqui está a estrutura de exemplo:
 }
 ```
 
-**Destaques:**
-- `ExecutionIntervalMinutes`: A cada quantos minutos a varredura deve ocorrer.
-- `SourcePath`: Pode ser um caminho absoluto (`C:\pasta`) ou usar variáveis do Windows (`%USERPROFILE%\pasta`).
-- O aplicativo entende essas mudanças sem precisar ser reiniciado. Apenas salve o arquivo!
+**Destaques Importantes:**
+- Você define exatamente a janela de tempo da periodicidade do serviço (`ExecutionIntervalMinutes`).
+- Suporte 100% confiável a variáveis do sistema (como o `%USERPROFILE%`).
+- Qualquer alteração que você realizar pela interface passará a valer no **mesmo instante** sem a necessidade de fechar ou reiniciar a aplicação!
 
 ---
 
-## 🗂️ Arquitetura do Projeto
+## 🗂️ Arquitetura do Projeto (Clean Code)
 
-Nós adotamos padrões de código limpo para que seja fácil entender e expandir o aplicativo. Se você for contribuir, note os três pilares do repositório:
-- `Services/OrganizerService.cs`: O "motor" por trás de tudo. É onde o monitoramento acontece usando assincronicidade e manipulação de arquivos.
-- `UI/MainApplicationContext.cs`: Este é o esqueleto do nosso app de bandeja. Ele desenha o ícone usando primitivas gráficas nativas e não depende de imagens externas para funcionar.
-- `UI/ThemeManager.cs`: Central de UI/UX. Todos os controles (sejam caixas de texto ou botões) recebem suas cores a partir daqui, já suportando Modo Claro e Escuro de forma amigável.
+Esta arquitetura abraçou as mais modernas e recomendadas práticas de Clean Code, o que deixa as portas totalmente abertas para recursos futuros complexos — como integrações com LLMs (IA) locais para processamento de metadados:
 
-Sempre que criar uma nova tela, lembre-se de chamar `ThemeManager.ApplyTheme(this)` no construtor.
+- `Services/OrganizerService.cs`: É o "Motor Base". Controla o estado asssíncrono (Pausa/Retomar), o ciclo de vida do delay infinito, resolve o processamento inteligente das matrizes de extensões e protege os arquivos que sofrem bloqueios (Locks).
+- `UI/MainApplicationContext.cs`: A "Mão". Contexto minimalista puro da API do Windows Forms injetado em um `.NET Host` que sustenta a existência no Windows Tray desenhando o próprio ícone pixel por pixel e abrindo Menus.
+- `UI/ThemeManager.cs`: O "Arquiteto Visual". Responsável absoluto por interceptar toda e qualquer janela ou controle criado na interface para aplicar injetivamente as cores harmônicas que compõem o modo Claro ou Escuro nativo.
+- `download-redirector.Tests/`: Suíte isolada sob a tecnologia **xUnit**, que assegura através do pipeline de integração contínua na Nuvem (Actions) que toda a lógica vital do projeto continua intacta após cada Commit.
 
 ---
 
 ## 📄 Licença
-Distribuído sob a licença MIT. Veja o arquivo `LICENSE` para mais informações.
+Distribuído sob a licença MIT. Veja o arquivo `LICENSE` para maiores detalhes.
