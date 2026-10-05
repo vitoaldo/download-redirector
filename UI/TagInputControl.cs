@@ -8,8 +8,8 @@ namespace download_redirector.UI;
 
 public class TagInputControl : UserControl
 {
-    private FlowLayoutPanel _flowPanel;
-    private TextBox _inputBox;
+    private FlowLayoutPanel _flowPanel = null!;
+    private TextBox _inputBox = null!;
 
     public TagInputControl()
     {
@@ -97,10 +97,12 @@ public class TagInputControl : UserControl
         // Arredondamento (GDI+)
         tagPanel.Paint += (s, pe) =>
         {
-            var p = s as Panel;
-            pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            using var brush = new SolidBrush(p.BackColor);
-            pe.Graphics.FillRoundedRectangle(brush, new Rectangle(0, 0, p.Width, p.Height), 4);
+            if (s is Panel p)
+            {
+                pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                using var brush = new SolidBrush(p.BackColor);
+                pe.Graphics.FillRoundedRectangle(brush, new Rectangle(0, 0, p.Width, p.Height), 4);
+            }
         };
 
         var lblText = new Label

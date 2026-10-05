@@ -40,7 +40,7 @@ public class OrganizerService : BackgroundService
 
                 if (!IsPaused)
                 {
-                    PerformOrganization(watcherSettings);
+                    await PerformOrganizationAsync(watcherSettings);
                 }
 
                 TrimMemory();
@@ -57,7 +57,7 @@ public class OrganizerService : BackgroundService
         }
     }
 
-    private void PerformOrganization(WatcherSettings settings)
+    private async Task PerformOrganizationAsync(WatcherSettings settings)
     {
         var foldersToWatch = settings.Folders ?? new List<WatchedFolder>();
 
@@ -87,7 +87,7 @@ public class OrganizerService : BackgroundService
                     continue;
                 }
 
-                var targetCache = new List<(string TargetPath, List<string> Extensions)>();
+                var targetCache = new List<(string TargetPath, List<string> Extensions, RenameMode Mode, List<ManualRenameRule> ManualRules, string AIPrompt)>();
                 if (folder.Targets != null)
                 {
                     foreach (var target in folder.Targets)
@@ -96,7 +96,10 @@ public class OrganizerService : BackgroundService
                         {
                             targetCache.Add((
                                 Environment.ExpandEnvironmentVariables(target.TargetPath),
-                                target.Extensions.Select(e => e.ToLowerInvariant()).ToList()
+                                target.Extensions.Select(e => e.ToLowerInvariant()).ToList(),
+                                target.RenameMode,
+                                target.ManualRules ?? new List<ManualRenameRule>(),
+                                target.AIPrompt
                             ));
                         }
                     }
@@ -118,17 +121,39 @@ public class OrganizerService : BackgroundService
                     }
 
                     string targetDirectoryPath = defaultTargetPath;
+                    var fileNameWithoutExt = Path.GetFileNameWithoutExtension(file);
 
-                    foreach (var target in targetCache)
+                    var matchedTarget = targetCache.FirstOrDefault(t => t.Extensions.Contains(extension));
+                    if (matchedTarget.TargetPath != null)
                     {
-                        if (target.Extensions.Contains(extension))
+                        targetDirectoryPath = matchedTarget.TargetPath;
+
+                        if (matchedTarget.Mode == RenameMode.Manual)
                         {
-                            targetDirectoryPath = target.TargetPath;
-                            break;
+                            foreach (var rule in matchedTarget.ManualRules)
+                            {
+                                if (!string.IsNullOrEmpty(rule.Find))
+                                    fileNameWithoutExt = fileNameWithoutExt.Replace(rule.Find, rule.Replace ?? "");
+                            }
+                        }
+                        else if (matchedTarget.Mode == RenameMode.AI)
+                        {
+                            var provider = AIServiceFactory.GetProvider(settings.ActiveAIProvider);
+                            if (provider != null)
+                            {
+                                try
+                                {
+                                    fileNameWithoutExt = await provider.GenerateFileNameAsync(fileNameWithoutExt, matchedTarget.AIPrompt);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(ex, "Erro de IA ao renomear {file}", fileNameWithoutExt);
+                                }
+                            }
                         }
                     }
 
-                    var targetFilePath = Path.Combine(targetDirectoryPath, fileName);
+                    var targetFilePath = Path.Combine(targetDirectoryPath, $"{fileNameWithoutExt}{extension}");
 
                     if (!Directory.Exists(targetDirectoryPath))
                     {
@@ -137,7 +162,6 @@ public class OrganizerService : BackgroundService
 
                     if (File.Exists(targetFilePath))
                     {
-                        var fileNameWithoutExt = Path.GetFileNameWithoutExtension(file);
                         targetFilePath = Path.Combine(targetDirectoryPath, $"{fileNameWithoutExt}_{DateTime.Now:yyyyMMddHHmmss}{extension}");
                     }
 

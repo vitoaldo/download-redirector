@@ -60,11 +60,15 @@ Source: "{#MyPublishDir}\appsettings.json"; DestDir: "{app}"; Flags: onlyifdoesn
 ; Licenca para referencia
 Source: "{#MyLicenseFile}"; DestDir: "{app}"; Flags: ignoreversion
 
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "startmenuicon"; Description: "Criar icone no Menu Iniciar"; GroupDescription: "{cm:AdditionalIcons}"
+
 [Icons]
-; Cria um atalho no Menu Iniciar
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-; Cria um atalho na pasta Inicializar (Startup) para iniciar com o Windows
-Name: "{autostartup}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+; Cria um atalho no Menu Iniciar opcional
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: startmenuicon
+; Cria um atalho na Area de Trabalho opcional
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
 ; Inicia o aplicativo logo apos a instalacao
